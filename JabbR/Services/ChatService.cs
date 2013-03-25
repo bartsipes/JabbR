@@ -386,9 +386,21 @@ namespace JabbR.Services
             return chatMessage;
         }
 
+        public ChatMessage AddMessage(string userId, string roomName, string content)
+        {
+            var user = _repository.GetUserById(userId);
+            var room = _repository.GetRoomByName(roomName);
+
+            var message = AddMessage(user, room, Guid.NewGuid().ToString("d"), content);
+
+            _repository.CommitChanges();
+
+            return message;
+        }
+
         public void AppendMessage(string id, string content)
         {
-            ChatMessage message = _repository.GetMessagesById(id);
+            ChatMessage message = _repository.GetMessageById(id);
 
             message.Content += content;
 
@@ -482,7 +494,7 @@ namespace JabbR.Services
                 Id = clientId,
                 User = user,
                 UserAgent = userAgent,
-                LastActivity = DateTimeOffset.UtcNow
+                LastActivity = user.LastActivity
             };
 
             _repository.Add(client);

@@ -100,7 +100,7 @@ namespace JabbR.Services
             return getRoomByName(_db, roomName);
         }
 
-        public ChatMessage GetMessagesById(string id)
+        public ChatMessage GetMessageById(string id)
         {
             return _db.Messages.FirstOrDefault(m => m.Id == id);
         }
@@ -253,6 +253,12 @@ namespace JabbR.Services
                       .Where(r => r.Key == room.Key)
                       .Select(r => r.Name)
                       .FirstOrDefault() != null;
+        }
+
+
+        public void Reload(object entity)
+        {
+            _db.Entry(entity).Reload();
         }
     }
 }

@@ -5,15 +5,16 @@
 <html>
 <head>
     <title>JabbR</title>
-    <meta http-equiv="X-UA-Compatible" content="IE=9" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="description" content="A real-time chat application." />
     <meta name="keywords" content="chat,realtime chat,signalr,jabbr" />
     <link href="@Url.Content("~/Content/images/logo32.png")" rel="icon" type="image/png" sizes="32x32">
     <link href="@Url.Content("~/Content/images/logo64.png")" rel="icon" type="image/png" sizes="64x64">
     <link href="@Url.Content("~/favicon.ico")" rel="shortcut icon" type="image/x-icon" sizes="16x16">
     @{ 
-        WriteLiteral(Bundle.Css()
+        WriteLiteral(Bundle.Css().ForceDebugIf(() => Model.DebugMode)
             .Add("~/Content/bootstrap.min.css")
+            .Add("~/Content/font-awesome.min.css")
             .Add("~/Chat.css")
             .Add("~/Chat.nuget.css")
             .Add("~/Chat.bbcnews.css")
@@ -40,7 +41,7 @@
     </script>
     }
     <script id="new-message-template" type="text/x-jquery-tmpl">
-        <li class="message ${highlight} clearfix" id="m-${id}" data-name="${name}" data-timestamp="${date}">
+        <li class="message ${highlight} clearfix{{if isMine}} my-message{{/if}}" id="m-${id}" data-name="${name}" data-timestamp="${date}">
             <div class="left">
                 {{if showUser}}
                 <img src="https://secure.gravatar.com/avatar/${hash}?s=16&d=mm" class="gravatar" />
@@ -81,11 +82,11 @@
     </script>
     <script id="new-user-template" type="text/x-jquery-tmpl">
         <li class="user" data-name="${name}">
+            <i class="user-status"></i>
             <img class="gravatar" src="https://secure.gravatar.com/avatar/${hash}?s=16&d=mm" />
             <div class="details">
-                <div class="name">${name}</div>
-                <span class="admin">{{if admin}}(admin){{/if}}</span>
-                <span class="note{{if noteClass}} ${noteClass}{{/if}}" {{if note}}title="${note}"{{/if}}></span>
+                <div class="name" {{if note}}title="${note}"{{/if}}>${name}</div>
+                <span class="admin"> {{if admin}}(admin){{/if}}</span>
                 <span class="flag{{if flagClass}} ${flagClass}{{/if}}" {{if flag}}title="${country}"{{/if}}></span>
             </div>
         </li>
@@ -194,23 +195,12 @@
       <div class="banner" role="banner">
         <h1>Jabb</h1>
         <div class="jabbrLogo" id="logo"></div>
-        <div>
-          Powered by <a href="https://github.com/SignalR/SignalR" target="_blank">SignalR</a>
-        </div>
       </div>
-        <div class="btn-group account pull-right">
-            <a class="btn dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-cog"></i><span class="caret"></span></a>
-            <ul id="preferences" class="dropdown-menu">
-                <li><a href="@Url.Content("~/account")" target="_blank"><i class="icon-user"></i> Account</a></li>
-                <li><a class="logout" title="logout"><i class="icon-logout"></i> Logout</a></li>
-                <li><a class="sound" title="audible notifications"><i class="icon-sound"></i> Audible Notifications</a></li>
-                <li><a class="richness" title="toggle rich-content"><i class="icon-richness"></i> Toggle Rich-content</a></li>
-                <li><a class="toast" title="popup notifications" aria-haspopup="true"><i class="icon-toast"></i>Popup Notifications</a></li>
-                <li><a class="download" title="download messages" aria-haspopup="true"><i class="icon-download"></i>Download Messages</a></li>
-                <li><a class="help" title="display help" aria-haspopup="true"><i class="icon-help"></i>Display help</a></li>
-            </ul>
+        <div id="preferences" class="btn-group account pull-right">
+            <a class="btn help" aria-haspopup="true" title="display help"><i class="icon-question-sign"></i></a>
+            <a class="btn" title="account settings" href="@Url.Content("~/account")" target="_blank"><i class="icon-user"></i></a>
+            <a class="btn logout" title="sign out"><i class="icon-signout"></i></a>
         </div>
-      <div style="clear: both"></div>
     <nav>
       <ul id="tabs" role="tablist">
         <li id="tabs-lobby" class="current lobby" data-name="Lobby" role="tab">
@@ -221,6 +211,17 @@
       </ul>
     </nav>
     </header>
+      <div id="topic-bar">
+        <div id="room-actions" class="btn-group pull-right">
+            <a class="btn btn-small dropdown-toggle" data-toggle="dropdown" href="#">Room Settings <span class="caret"></span></a>
+            <ul id="room-preferences" class="dropdown-menu">
+                <li><a class="sound" title="audible notifications"><i class="icon-sound"></i> Audible Notifications</a></li>
+                <li><a class="richness" title="toggle rich-content"><i class="icon-richness"></i> Toggle Rich-content</a></li>
+                <li><a class="toast" title="popup notifications" aria-haspopup="true"><i class="icon-toast"></i>Popup Notifications</a></li>
+                <li><a class="download" title="download messages" aria-haspopup="true"><i class="icon-download"></i>Download Messages</a></li>
+            </ul>
+        </div>
+      </div>
     <div id="chat-area" role="tabpanel">
       <ul id="messages-lobby" class="messages current" role="log">
       </ul>
@@ -237,22 +238,18 @@
       <div id="message-box">
         <textarea id="new-message" autocomplete="off" aria-autocomplete="none" accesskey="m"></textarea>
       </div>
-      <input type="submit" id="send" value="Send" class="send" />
-      <div id="message-instruction">
-        Type @@ then press TAB to auto-complete nicknames
-      </div>
+      <input type="submit" id="send" value="Send" class="send btn" />
       </form>
+    <form id="upload" action="@Url.Content("~/upload")" method="post" enctype="multipart/form-data" target="upload-frame">
+      <input type="hidden" id="file-connection-id" name="connectionId" />
+      <input type="hidden" id="file-message-id" name="messageId" />
+      <input type="hidden" id="file-room" name="room" />
+      <div class="btn upload-button icon-cloud-upload icon-large">
+        <input type="file" id="hidden-file" name="data">
+      </div>
+    </form>
+    <iframe id="upload-frame" name="upload-frame" style="position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;"></iframe>
     </div>
-    @if (Model.ShowDetails)
-    {
-    <div id="releaseArea">
-        <p id="releaseTag">
-            Deployed from <a target="_blank" href="https://github.com/davidfowl/JabbR/commit/@Model.Sha" title="View the commit.">@Model.Sha.Substring(0, 10)</a>
-            on <a target="_blank" href="https://github.com/davidfowl/JabbR/branches/@Model.Branch" title="View the branch.">@Model.Branch</a> 
-            at @Model.Time.
-        </p>
-    </div>
-    }
     <audio src="Content/sounds/notification.wav" id="noftificationSound" hidden="hidden" aria-hidden="true">
     </audio>
     <section aria-hidden="true" aria-haspopup="true">
@@ -297,6 +294,16 @@
         </div>
         <div class="modal-body">
             <div class="help-body">
+                @if (Model.ShowDetails)
+                {
+                    <div id="releaseArea">
+                        <p id="releaseTag">
+                            Deployed from <a target="_blank" href="https://github.com/davidfowl/JabbR/commit/@Model.Sha" title="View the commit.">@Model.Sha.Substring(0, 10)</a>
+                            on <a target="_blank" href="https://github.com/davidfowl/JabbR/branches/@Model.Branch" title="View the branch.">@Model.Branch</a> 
+                            at @Model.Time.
+                        </p>
+                    </div>
+                }
                 <div class="command-list">
                     <h3>FAQ</h3>
                     <p>Click on a user to send message.</p>
@@ -325,45 +332,57 @@
           </p>
         </div>
       </div>
+      <div id="reloadMessageNotification" class="reload-message alert alert-info">
+        <button type="button" class="close" data-dismiss="alert">&times;</button><a href="#">Load missing messages</a>
+      </div>
+        <div id="connectionStatus" class="connection-status" data-toggle="popover" data-placement="left">
+            <i class="icon-connection-status"></i>
+        </div>
+        <div id="connection-info-popover" class="popover"><div class="arrow"></div><div class="popover-inner"><i class="popover-title-icon icon-globe" style="display: none;"></i><h3 class="popover-title" style="display: none;"></h3><div class="popover-content"><p></p></div></div></div>
+        <div id="connection-info-content" style="display: none;"><p id="connection-status"></p><p id="connection-transport"></p></div>
+        <div id="connection-state-changed-popover" class="popover"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title" style="display: none;"></h3><i id="popover-content-icon"></i><div class="popover-content"><p></p></div></div></div>
     </section>
   </section> 
 
      @{
-         WriteLiteral(Bundle.JavaScript()
+         WriteLiteral(Bundle.JavaScript().ForceDebugIf(() => Model.DebugMode)
             .Add("~/Scripts/jquery-1.9.0.min.js")
             .Add("~/Scripts/jquery-migrate-1.0.0.min.js")
             .Add("~/Scripts/json2.min.js")
             .Add("~/Scripts/bootstrap.js")
             .Add("~/Scripts/jquery.KeyTips.js")
             .Add("~/Scripts/jquery-ui-1.10.0.min.js")
-            .Add("~/Scripts/jquery.signalR.min.js")
+            .Add("~/Scripts/jquery.signalR-1.1.0-beta1-130322.min.js")
             .Render("~/Scripts/JabbR1_#.js"));
     }
   <script type="text/javascript" src="@Url.Content("~/signalr/hubs")"></script>
+  <script type="text/javascript">
+      window.jabbrVersion = '@Model.Version';
+  </script>
      @{
          
-        WriteLiteral(Bundle.JavaScript()
-            .Add("~/Scripts/jQuery.tmpl.min.js")
-            .Add("~/Scripts/jquery.cookie.js")
-            .Add("~/Scripts/jquery.autotabcomplete.js")
-            .Add("~/Scripts/jquery.timeago.0.10.js")
-            .Add("~/Scripts/jquery.captureDocumentWrite.min.js")
-            .Add("~/Scripts/jquery.sortElements.js")
-            .Add("~/Scripts/ba-linkify.min.js")
-            .Add("~/Scripts/quicksilver.js")
-            .Add("~/Scripts/jquery.livesearch.js")
-            .Add("~/Scripts/Markdown.Converter.js")
-            .Add("~/Scripts/jquery.history.js")
-            .Add("~/Chat.utility.js")
-            .Add("~/Chat.emoji.js")
-            .Add("~/Chat.toast.js")
-            .Add("~/Chat.ui.js")
-            .Add("~/Chat.documentOnWrite.js")
-            .Add("~/Chat.twitter.js")
-            .Add("~/Chat.pinnedWindows.js")
-            .Add("~/Chat.githubissues.js")
-            .Add("~/Chat.js")
-            .Render("~/Scripts/JabbR2_#.js"));
+         WriteLiteral(Bundle.JavaScript().ForceDebugIf(() => Model.DebugMode)
+             .Add("~/Scripts/jQuery.tmpl.min.js")
+             .Add("~/Scripts/jquery.cookie.js")
+             .Add("~/Scripts/jquery.autotabcomplete.js")
+             .Add("~/Scripts/jquery.timeago.0.10.js")
+             .Add("~/Scripts/jquery.captureDocumentWrite.min.js")
+             .Add("~/Scripts/jquery.sortElements.js")
+             .Add("~/Scripts/ba-linkify.min.js")
+             .Add("~/Scripts/quicksilver.js")
+             .Add("~/Scripts/jquery.livesearch.js")
+             .Add("~/Scripts/Markdown.Converter.js")
+             .Add("~/Scripts/jquery.history.js")
+             .Add("~/Chat.utility.js")
+             .Add("~/Chat.emoji.js")
+             .Add("~/Chat.toast.js")
+             .Add("~/Chat.ui.js")
+             .Add("~/Chat.documentOnWrite.js")
+             .Add("~/Chat.twitter.js")
+             .Add("~/Chat.pinnedWindows.js")
+             .Add("~/Chat.githubissues.js")
+             .Add("~/Chat.js")
+             .Render("~/Scripts/JabbR2_#.js"));
     }
 </body>
 </html>

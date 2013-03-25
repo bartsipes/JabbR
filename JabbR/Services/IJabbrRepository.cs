@@ -16,7 +16,7 @@ namespace JabbR.Services
         IQueryable<ChatMessage> GetMessagesByRoom(ChatRoom room);
         IQueryable<ChatMessage> GetPreviousMessages(string messageId);
         IQueryable<ChatRoom> GetAllowedRooms(ChatUser user);
-        ChatMessage GetMessagesById(string id);
+        ChatMessage GetMessageById(string id);
 
         ChatUser GetUserById(string userId);
         ChatRoom GetRoomByName(string roomName);
@@ -45,5 +45,8 @@ namespace JabbR.Services
         void CommitChanges();
 
         bool IsUserInRoom(ChatUser user, ChatRoom room);
+
+        // Reload entities from the store
+        void Reload(object entity);
     }
 }

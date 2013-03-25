@@ -14,6 +14,9 @@
   $twitterSecret                      = $env:JABBR_TWITTER_LOGIN_SECRET,
   $encryptionKey                      = $env:JABBR_ENCRYPTION_KEY,
   $verificationKey                    = $env:JABBR_VERIFICATION_KEY,
+  $imgurClientId                      = $env:JABBR_IMGUR_CLIENT_ID,
+  $blobStorageConnectionString        = $env:JABBR_BLOB_STORAGE_CONNECTION_STRING,
+  $maxFileUploadBytes                 = $env:JABBR_MAX_UPLOAD_FILE_BYTES,
   $commitSha,
   $commitBranch
 )
@@ -124,6 +127,7 @@ cp $libPath\signalr.exe $binPath\signalr.exe
 
 # Set app settngs
 set-appsetting -path $webConfigPath -name "jabbr:requireHttps" -value $true
+set-appsetting -path $webConfigPath -name "jabbr:proxyImages" -value $true
 set-appsetting -path $webConfigPath -name "jabbr:googleAnalytics" -value $googleAnalyticsToken
 set-appsetting -path $webConfigPath -name "jabbr:releaseBranch" -value $commitBranch
 set-appsetting -path $webConfigPath -name "jabbr:releaseSha" -value $commitSha
@@ -132,6 +136,22 @@ set-appsetting -path $webConfigPath -name "jabbr:releaseTime" -value (Get-Date -
 # Set encryption keys
 set-appsetting -path $webConfigPath -name "jabbr:encryptionKey" -value $encryptionKey
 set-appsetting -path $webConfigPath -name "jabbr:verificationKey" -value $verificationKey
+
+# File upload
+if($imgurClientId)
+{
+  set-appsetting -path $webConfigPath -name "jabbr:imagurClientId" -value $imgurClientId
+}
+
+if($blobStorageConnectionString)
+{
+  set-appsetting -path $webConfigPath -name "jabbr:azureblobStorageConnectionString" -value $blobStorageConnectionString
+}
+
+if($maxFileUploadBytes)
+{
+  set-appsetting -path $webConfigPath -name "jabbr:maxFileUploadBytes" -value $maxFileUploadBytes
+}
 
 # Set auth providers
 if($googleKey -and $googleSecret)

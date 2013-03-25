@@ -79,5 +79,63 @@ namespace JabbR.Services
                 return false;
             }
         }
+
+        public bool ProxyImages
+        {
+            get
+            {
+                string proxyImagesValue = ConfigurationManager.AppSettings["jabbr:proxyImages"];
+                bool proxyImages;
+                if (Boolean.TryParse(proxyImagesValue, out proxyImages))
+                {
+                    return proxyImages;
+                }
+                return false;
+            }
+        }
+
+        public int ProxyImageMaxSizeBytes
+        {
+            get
+            {
+                string proxyImageMaxSizeBytesValue = ConfigurationManager.AppSettings["jabbr:proxyImageMaxSizeBytes"];
+                int proxyImageMaxSizeBytes;
+                if (Int32.TryParse(proxyImageMaxSizeBytesValue, out proxyImageMaxSizeBytes))
+                {
+                    return proxyImageMaxSizeBytes;
+                }
+                return 0;
+            }
+        }
+
+        public string ImagurClientId
+        {
+            get
+            {
+                return ConfigurationManager.AppSettings["jabbr:imagurClientId"];
+            }
+        }
+
+        public string AzureblobStorageConnectionString
+        {
+            get
+            {
+                return ConfigurationManager.AppSettings["jabbr:azureblobStorageConnectionString"];
+            }
+        }
+
+        public int MaxFileUploadBytes
+        {
+            get
+            {
+                string maxFileUploadBytesValue = ConfigurationManager.AppSettings["jabbr:maxFileUploadBytes"];
+                int maxFileUploadBytes;
+                if (Int32.TryParse(maxFileUploadBytesValue, out maxFileUploadBytes))
+                {
+                    return maxFileUploadBytes;
+                }
+                return 0;
+            }
+        }
     }
 }

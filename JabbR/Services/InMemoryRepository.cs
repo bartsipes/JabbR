@@ -184,7 +184,7 @@ namespace JabbR.Services
             // if we're using the in memory repository all the data has been purged anyways
         }
 
-        public ChatMessage GetMessagesById(string id)
+        public ChatMessage GetMessageById(string id)
         {
             return (from r in _rooms
                     let message = r.Messages.FirstOrDefault(m => m.Id == id)
@@ -210,6 +210,10 @@ namespace JabbR.Services
             user.Rooms.Remove(room);
 
             room.Users.Remove(user);
+        }
+
+        public void Reload(object entity)
+        {
         }
     }
 }

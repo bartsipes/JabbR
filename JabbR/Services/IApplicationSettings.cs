@@ -12,5 +12,12 @@ namespace JabbR.Services
 
         bool RequireHttps { get; }
         bool MigrateDatabase { get; }
+        bool ProxyImages { get; }
+        int ProxyImageMaxSizeBytes { get; }
+
+        string ImagurClientId { get; }
+        string AzureblobStorageConnectionString { get; }
+
+        int MaxFileUploadBytes { get; }
     }
 }

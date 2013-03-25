@@ -6,6 +6,7 @@ using JabbR.Nancy;
 using JabbR.Services;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.AspNet.SignalR.SystemWeb.Infrastructure;
 using Microsoft.Owin.Mapping;
 using Microsoft.Owin.StaticFiles;
 using Newtonsoft.Json.Serialization;
@@ -42,7 +43,7 @@ namespace JabbR
 
             SetupSignalR(kernel, app);
             SetupWebApi(kernel, app);
-            SetupMiddleware(app);
+            SetupMiddleware(settings, app);
             SetupNancy(kernel, app);
 
             SetupErrorHandling();
@@ -54,9 +55,13 @@ namespace JabbR
             app.UseNancy(bootstrapper);
         }
 
-        private static void SetupMiddleware(IAppBuilder app)
+        private static void SetupMiddleware(IApplicationSettings settings, IAppBuilder app)
         {
-            app.MapPath("/proxy", subApp => subApp.Use(typeof(ImageProxyHandler)));
+            if (settings.ProxyImages)
+            {
+                app.MapPath("/proxy", subApp => subApp.Use(typeof(ImageProxyHandler), settings));
+            }
+
             app.UseStaticFiles();
         }
 
@@ -64,6 +69,10 @@ namespace JabbR
         {
             var resolver = new NinjectSignalRDependencyResolver(kernel);
             var connectionManager = resolver.Resolve<IConnectionManager>();
+
+            // Ah well loading system web.
+            kernel.Bind<IProtectedData>()
+                  .To<MachineKeyProtectedData>();
 
             kernel.Bind<IConnectionManager>()
                   .ToConstant(connectionManager);
